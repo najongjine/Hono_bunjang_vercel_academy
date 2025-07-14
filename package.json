@@ -1,0 +1,35 @@
+{
+  "name": "hono_memo",
+  "type": "commonjs",
+  "scripts": {
+    "clean": "rimraf dist",
+    "dev": "cross-env NODE_ENV=development tsx watch src/index.ts",
+    "build": "npm run clean && tsc",
+    "start_bk": "npm run build && cross-env NODE_ENV=production node dist/index.js",
+    "start": "cross-env NODE_ENV=production tsx watch src/index.ts",
+    "start_build": "npm run build && cross-env NODE_ENV=production node dist/index.js",
+    "start:vercel": "cross-env NODE_ENV=production node dist/index.js"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.16.0",
+    "@neondatabase/serverless": "^1.0.1",
+    "bcrypt": "^6.0.0",
+    "class-transformer": "^0.5.1",
+    "cross-env": "^7.0.3",
+    "dotenv": "^17.2.0",
+    "hono": "^4.8.4",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.16.3",
+    "reflect-metadata": "^0.2.2",
+    "rimraf": "^6.0.1",
+    "tsx": "^4.20.3",
+    "typeorm": "^0.3.25"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^24.0.13",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  }
+}
