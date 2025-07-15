@@ -66,7 +66,6 @@ router.post("/register", async (c) => {
   }
 });
 
-
 router.post("/login", async (c) => {
   let result: { success: boolean; data: any; code: string; message: string } = {
     success: true,
@@ -80,34 +79,41 @@ router.post("/login", async (c) => {
     const username = String(reqs?.username ?? "").trim();
     const password = String(reqs?.password ?? "").trim();
 
+    const uid = String(reqs?.uid ?? "");
+    const email = String(reqs?.email ?? "");
+    const displayname = String(reqs?.displayName ?? "");
+    const photourl = String(reqs?.photoURL ?? "");
+    const providerid = String(reqs?.providerId ?? "");
+
+    if (!uid || !email || !displayname || !providerid) {
+      result.success = false;
+      result.message = `필수 데이터 못받음 (uid, email, displayName, providerId)`;
+      return c.json(result);
+    }
+
     // 1. 유저 조회
     const userRows = await sql`
       SELECT *
       FROM t_user
-      WHERE username = ${username}
+      WHERE uid = ${uid}
       LIMIT 1
     `;
 
-    const userData = userRows[0];
+    let userData: any;
+    try {
+      userData = userRows[0];
+    } catch (error) {
+      userData = undefined;
+    }
 
     // 2. 존재 여부 확인
     if (!userData?.idp) {
-      result.success = false;
-      result.message = `가입되지 않거나, 잘못된 비밀번호 입니다`;
-      return c.json(result);
+      const [newUser] = await sql`
+      INSERT INTO t_user (uid, email,displayname,photourl,providerid)
+      VALUES (${uid}, ${email},${displayname},${photourl},${providerid})
+      RETURNING *
+    `;
     }
-
-    // 3. 비밀번호 검증
-    const isPasswordMatch = await comparePassword(password, userData.password ?? "");
-
-    if (!isPasswordMatch) {
-      result.success = false;
-      result.message = `가입되지 않거나, 잘못된 비밀번호 입니다`;
-      return c.json(result);
-    }
-
-    // 4. 비밀번호 제거
-    userData.password = "";
 
     // 5. 토큰 발급
     const payload = instanceToPlain(userData);
