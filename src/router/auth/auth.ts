@@ -84,6 +84,7 @@ router.post("/login", async (c) => {
     const displayname = String(reqs?.displayName ?? "");
     const photourl = String(reqs?.photoURL ?? "");
     const providerid = String(reqs?.providerId ?? "");
+    const idtoken = String(reqs?.idtoken ?? "");
 
     if (!uid || !email || !displayname || !providerid) {
       result.success = false;
