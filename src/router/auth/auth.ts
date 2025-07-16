@@ -118,6 +118,7 @@ router.post("/login", async (c) => {
       VALUES (${uid}, ${email},${displayname},${photourl},${providerid})
       RETURNING *
     `;
+      userData = newUser;
     }
 
     // 5. 토큰 발급
@@ -131,6 +132,7 @@ router.post("/login", async (c) => {
 
     return c.json(result);
   } catch (error: any) {
+    console.log(`!!! login error: `, error);
     result.success = false;
     result.message = error?.message ?? "Unknown error";
     return c.json(result);
