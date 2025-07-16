@@ -11,6 +11,7 @@ import {
 } from "../../utils/utils.js";
 import { instanceToPlain } from "class-transformer";
 import { sql } from "../../db.js";
+import { get_userdata_by_uid } from "./auth.query.js";
 
 const router = new Hono();
 
@@ -97,19 +98,7 @@ router.post("/login", async (c) => {
     }
 
     // 1. 유저 조회
-    const userRows = await sql`
-      SELECT *
-      FROM t_user
-      WHERE uid = ${uid}
-      LIMIT 1
-    `;
-
-    let userData: any;
-    try {
-      userData = userRows[0];
-    } catch (error) {
-      userData = undefined;
-    }
+    let userData = await get_userdata_by_uid(uid);
 
     // 2. 존재 여부 확인
     if (!userData?.idp) {
@@ -118,7 +107,7 @@ router.post("/login", async (c) => {
       VALUES (${uid}, ${email},${displayname},${photourl},${providerid})
       RETURNING *
     `;
-      userData = newUser;
+      userData = await get_userdata_by_uid(uid);
     }
 
     // 5. 토큰 발급
