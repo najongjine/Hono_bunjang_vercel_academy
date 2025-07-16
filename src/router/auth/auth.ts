@@ -81,10 +81,14 @@ router.post("/login", async (c) => {
 
     const uid = String(reqs?.uid ?? "");
     const email = String(reqs?.email ?? "");
-    const displayname = String(reqs?.displayName ?? "");
+    const displayname = String(reqs?.displayname ?? "");
     const photourl = String(reqs?.photoURL ?? "");
-    const providerid = String(reqs?.providerId ?? "");
+    const providerid = String(reqs?.providerid ?? "");
     const idtoken = String(reqs?.idtoken ?? "");
+    console.log(`## uid: `, uid);
+    console.log(`## email: `, email);
+    console.log(`## displayname: `, displayname);
+    console.log(`## providerid: `, providerid);
 
     if (!uid || !email || !displayname || !providerid) {
       result.success = false;
