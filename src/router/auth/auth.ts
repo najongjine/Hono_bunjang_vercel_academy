@@ -82,7 +82,7 @@ router.post("/login", async (c) => {
     const uid = String(reqs?.uid ?? "");
     const email = String(reqs?.email ?? "");
     const displayname = String(reqs?.displayname ?? "");
-    const photourl = String(reqs?.photoURL ?? "");
+    const photourl = String(reqs?.photourl ?? "");
     const providerid = String(reqs?.providerid ?? "");
     const idtoken = String(reqs?.idtoken ?? "");
     console.log(`## uid: `, uid);
