@@ -42,7 +42,7 @@ SELECT
       '[]'
     ) AS roles
   FROM t_user AS u
-  LEFT JOIN t_user_role r ON u.idp = r.idp
+  LEFT JOIN t_user_role r ON u.idp = r.user_idp
   WHERE uid = ${uid}
   GROUP BY u.idp
   LIMIT 1

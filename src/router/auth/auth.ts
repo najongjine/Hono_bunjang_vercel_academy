@@ -74,7 +74,6 @@ router.post("/login", async (c) => {
     code: "",
     message: ``,
   };
-
   try {
     const reqs = await c.req.json();
     const username = String(reqs?.username ?? "").trim();
