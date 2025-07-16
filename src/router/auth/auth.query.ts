@@ -21,27 +21,31 @@ export interface UserData {
 export const get_userdata_by_uid = async (uid: string) => {
   let userData: any;
   const userRows = await sql`
-      SELECT 
-      u.idp
-      ,u.uid
-      ,email
-      ,displayname
-      ,photourl
-      ,providerid
-      ,created_dt
-      ,updated_dt
-      ,COALESCE(
-        json_agg(
-         r.idp as role_idp
-         ,r.user_idp
-         ,r.irole
-         ,r.created_dt
-        ) FILTER (WHERE r.uid IS NOT NULL), '[]'
-      ) AS roles
-      FROM t_user as u
-      LEFT JOIN t_user_role r ON u.idp = r.idp
-      WHERE uid = ${uid}
-      LIMIT 1
+SELECT 
+    u.idp,
+    u.uid,
+    u.email,
+    u.displayname,
+    u.photourl,
+    u.providerid,
+    u.created_dt,
+    u.updated_dt,
+    COALESCE(
+      json_agg(
+        json_build_object(
+          'role_idp', r.idp,
+          'user_idp', r.user_idp,
+          'irole', r.irole,
+          'created_dt', r.created_dt
+        )
+      ) FILTER (WHERE r.idp IS NOT NULL),
+      '[]'
+    ) AS roles
+  FROM t_user AS u
+  LEFT JOIN t_user_role r ON u.idp = r.idp
+  WHERE uid = ${uid}
+  GROUP BY u.idp
+  LIMIT 1
     `;
   try {
     userData = userRows[0];

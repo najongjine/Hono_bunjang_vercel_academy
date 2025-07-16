@@ -86,10 +86,6 @@ router.post("/login", async (c) => {
     const photourl = String(reqs?.photourl ?? "");
     const providerid = String(reqs?.providerid ?? "");
     const idtoken = String(reqs?.idtoken ?? "");
-    console.log(`## uid: `, uid);
-    console.log(`## email: `, email);
-    console.log(`## displayname: `, displayname);
-    console.log(`## providerid: `, providerid);
 
     if (!uid || !email || !displayname || !providerid) {
       result.success = false;
@@ -107,6 +103,12 @@ router.post("/login", async (c) => {
       VALUES (${uid}, ${email},${displayname},${photourl},${providerid})
       RETURNING *
     `;
+      if (newUser?.idp) {
+        await sql`
+      INSERT INTO t_user_role (user_idp, irole)
+      VALUES (${newUser?.idp}, 'user');
+    `;
+      }
       userData = await get_userdata_by_uid(uid);
     }
 
