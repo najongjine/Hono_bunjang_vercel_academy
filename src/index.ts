@@ -8,6 +8,7 @@ import test1Router from "./router/test1.js";
 import dbtest from "./router/dbtest/dbtest.js";
 import auth from "./router/auth/auth.js";
 import memoRouter from "./router/memo/memo.js";
+import productRouter from "./router/product/product.js";
 
 // app 이라는 객체를 만들어라. Hono 라는 클래스를 통해서
 // 클래스란건 어떻게 알음?? new 키워드 보고 눈치챔
@@ -29,8 +30,6 @@ app.use(
   })
 );
 
-
-
 // get은 영어의 뜻에선 가져오다. 근데, 이게 http 이론에서도 등장
 // endpoint도 있다 "/"
 // 또 테스트도 해보고, "아... 이게 api endpoint구나" 이렇게 아는것
@@ -42,6 +41,7 @@ app.route("/test1", test1Router);
 app.route("/dbtest", dbtest);
 app.route("/api/auth", auth);
 app.route("/api/memo", memoRouter);
+app.route("/api/product", productRouter);
 
 /** 이건 코드가 드럽게 어렵게 생김
  * port:3000, console.log(`Server is running on http://localhost:${info.port}`);

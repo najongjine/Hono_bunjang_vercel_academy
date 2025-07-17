@@ -25,7 +25,7 @@ router.post("/body", async (c) => {
 /**
  * 그냥 데이터랑, 파일을 받을수 있다
  */
-router.post("/formdata", async (c) => {
+router.post("/product_upload", async (c) => {
   try {
     // formData 에서 데이터 꺼내기
     const body = await c?.req?.formData();
