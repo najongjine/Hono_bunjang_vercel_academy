@@ -58,10 +58,24 @@ router.post("/product_upload", async (c) => {
     // 데이터 타입이 formData 인 body 변수에서 name 꺼냄
     let title = String(body.get("name"));
     let content = String(body.get("description"));
+    let product_idp = Number(body.get("product_idp") ?? 0);
     let price = Number(body.get("price") ?? 0);
     let category_idp = Number(body.get("category_idp") ?? 0);
+
     let upserted: any;
-    const [inserted] = await sql`
+    upserted = await sql`
+    SELECT
+    *
+    FROM t_product as p
+    WHERE p.idp = ${product_idp}
+    `;
+    try {
+      upserted = upserted[0];
+    } catch (error) {
+      upserted = null;
+    }
+    if (!upserted?.idp) {
+      const [inserted] = await sql`
       INSERT INTO t_memo (title, content, price,category_idp)
       VALUES (
         ${title},
@@ -71,22 +85,31 @@ router.post("/product_upload", async (c) => {
       )
       RETURNING *
     `;
-    upserted = inserted;
-
-    // file1 꺼냄. :any 붙인 이유는 파일 타입은 굉장히 복잡하기 때문에, 자바스크립트 스타일로 하겠다.
+      upserted = inserted;
+    } else {
+      const [updated] = await sql`
+      UPDATE t_product
+      SET
+        title = ${title},
+        content = ${content},
+        price = ${price},
+        category_idp=${category_idp}
+      WHERE idp = ${product_idp}
+      RETURNING *
+    `;
+      upserted = updated;
+    }
     const images = body.getAll("images") as File[];
     let imageUrlList: string[] = [];
-    // imageFiles: File[] 배열
     for (const img of images) {
-      //console.log(file.name);// 1. 파일을 ArrayBuffer로 읽고 Buffer로 변환
+      //console.log(img.name);// 1. 파일을 ArrayBuffer로 읽고 Buffer로 변환
       const arrayBuffer = await img.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
 
       // 2. Base64 인코딩
       const base64Image = buffer.toString("base64");
 
-      // 3. imgbb API 키
-      const IMGBB_API_KEY = "07c1e5d07ef4c497e700e5b7c0416269"; // 🔁 여기에 본인 키 입력
+      const IMGBB_API_KEY = process.env.IMGBB_API_KEY ?? "";
 
       const res = await axios.post("https://api.imgbb.com/1/upload", null, {
         params: {
@@ -99,8 +122,8 @@ router.post("/product_upload", async (c) => {
       imageUrlList.push(imageUrl);
     }
     if (imageUrlList && imageUrlList?.length > 0) {
-      const productIdp = upserted?.idp; // 고정된 상품 ID
-
+      const productIdp = upserted?.idp ?? 0; // 고정된 상품 ID
+      await sql`DELETE FROM t_product_img WHERE product_idp = ${productIdp}`;
       const values = imageUrlList
         .map((url) => `(${productIdp}, '${url}')`) // 💥 주의: 직접 문자열 삽입, SQL 인젝션 주의
         .join(", ");
@@ -109,8 +132,8 @@ router.post("/product_upload", async (c) => {
         `INSERT INTO t_product_img (product_idp, img_url) VALUES ${values}`
       );
     }
-
-    return c.json({});
+    result.data = upserted;
+    return c.json(result);
   } catch (error) {
     return c.json({ error });
   }
