@@ -3,6 +3,8 @@
  */
 
 import { Hono } from "hono";
+import { verifyToken } from "../../utils/utils";
+import { sql } from "../../db";
 
 const router = new Hono();
 
@@ -26,11 +28,50 @@ router.post("/body", async (c) => {
  * 그냥 데이터랑, 파일을 받을수 있다
  */
 router.post("/product_upload", async (c) => {
+  let result: { success: boolean; data: any; code: string; message: string } = {
+    success: true,
+    code: "",
+    data: null,
+    message: ``,
+  };
   try {
     // formData 에서 데이터 꺼내기
     const body = await c?.req?.formData();
+
+    // 1. Authorization 헤더 처리
+    let authHeader = c.req.header("Authorization") ?? "";
+    try {
+      authHeader = authHeader.split("Bearer ")[1];
+    } catch (error) {
+      authHeader = "";
+    }
+
+    // 2. 토큰 검증
+    const tokenData: any = verifyToken(authHeader);
+    if (!tokenData?.idp) {
+      // result.success = false;
+      // result.message = "로그인이 필요합니다";
+      // return c.json(result);
+    }
+
     // 데이터 타입이 formData 인 body 변수에서 name 꺼냄
-    let name = body.get("name");
+    let title = String(body.get("name"));
+    let content = String(body.get("description"));
+    let price = Number(body.get("price") ?? 0);
+    let category_idp = Number(body.get("category_idp") ?? 0);
+    let upserted: any;
+    const [inserted] = await sql`
+      INSERT INTO t_memo (title, content, price,category_idp)
+      VALUES (
+        ${title},
+        ${content},
+        ${price},
+        ${category_idp},
+      )
+      RETURNING *
+    `;
+    upserted = inserted;
+
     // file1 꺼냄. :any 붙인 이유는 파일 타입은 굉장히 복잡하기 때문에, 자바스크립트 스타일로 하겠다.
     let file1: any = body.get("file1");
     let base64file = "";
