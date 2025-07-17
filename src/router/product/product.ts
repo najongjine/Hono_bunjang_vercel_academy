@@ -5,6 +5,7 @@
 import { Hono } from "hono";
 import { verifyToken } from "../../utils/utils";
 import { sql } from "../../db";
+import axios from "axios";
 
 const router = new Hono();
 
@@ -73,17 +74,43 @@ router.post("/product_upload", async (c) => {
     upserted = inserted;
 
     // file1 꺼냄. :any 붙인 이유는 파일 타입은 굉장히 복잡하기 때문에, 자바스크립트 스타일로 하겠다.
-    let file1: any = body.get("file1");
-    let base64file = "";
-    // 파일을 첨부했으면
-    if (file1) {
-      const arrayBuffer = await file1.arrayBuffer();
+    const images = body.getAll("images") as File[];
+    let imageUrlList: string[] = [];
+    // imageFiles: File[] 배열
+    for (const img of images) {
+      //console.log(file.name);// 1. 파일을 ArrayBuffer로 읽고 Buffer로 변환
+      const arrayBuffer = await img.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
-      // 파일을 base64 라는 문자열로 변환해라
-      base64file = buffer.toString("base64");
+
+      // 2. Base64 인코딩
+      const base64Image = buffer.toString("base64");
+
+      // 3. imgbb API 키
+      const IMGBB_API_KEY = "07c1e5d07ef4c497e700e5b7c0416269"; // 🔁 여기에 본인 키 입력
+
+      const res = await axios.post("https://api.imgbb.com/1/upload", null, {
+        params: {
+          key: IMGBB_API_KEY,
+          image: base64Image,
+        },
+      });
+
+      const imageUrl = res?.data?.data?.url;
+      imageUrlList.push(imageUrl);
     }
-    // 파일을 base64 라는 문자열로 그대로 보여준것. 그러니깐 컴퓨터가 파일을 보는 방식
-    return c.json({ base64file, name });
+    if (imageUrlList && imageUrlList?.length > 0) {
+      const productIdp = upserted?.idp; // 고정된 상품 ID
+
+      const values = imageUrlList
+        .map((url) => `(${productIdp}, '${url}')`) // 💥 주의: 직접 문자열 삽입, SQL 인젝션 주의
+        .join(", ");
+
+      await sql.unsafe(
+        `INSERT INTO t_product_img (product_idp, img_url) VALUES ${values}`
+      );
+    }
+
+    return c.json({});
   } catch (error) {
     return c.json({ error });
   }
