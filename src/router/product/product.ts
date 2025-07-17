@@ -61,7 +61,7 @@ router.post("/product_upload", async (c) => {
     let product_idp = Number(body.get("product_idp") ?? 0);
     let price = Number(body.get("price") ?? 0);
     let category_idp = Number(body.get("category_idp") ?? 0);
-
+    console.log(`## product_idp:`, product_idp);
     let upserted: any;
     upserted = await sql`
     SELECT
@@ -69,23 +69,26 @@ router.post("/product_upload", async (c) => {
     FROM t_product as p
     WHERE p.idp = ${product_idp}
     `;
+    console.log(`## select upserted:`, upserted);
     try {
       upserted = upserted[0];
     } catch (error) {
       upserted = null;
     }
     if (!upserted?.idp) {
+      console.log(`## insert`);
       const [inserted] = await sql`
-      INSERT INTO t_memo (title, content, price,category_idp)
+      INSERT INTO t_product (title, content, price,category_idp)
       VALUES (
         ${title},
         ${content},
         ${price},
-        ${category_idp},
+        ${category_idp}
       )
       RETURNING *
     `;
       upserted = inserted;
+      console.log(`## INSERT upserted:`, upserted);
     } else {
       const [updated] = await sql`
       UPDATE t_product
@@ -99,26 +102,28 @@ router.post("/product_upload", async (c) => {
     `;
       upserted = updated;
     }
+    console.log(`## UPDATE upserted:`, upserted);
     const images = body.getAll("images") as File[];
     let imageUrlList: string[] = [];
     for (const img of images) {
       //console.log(img.name);// 1. 파일을 ArrayBuffer로 읽고 Buffer로 변환
       const arrayBuffer = await img.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
-
-      // 2. Base64 인코딩
       const base64Image = buffer.toString("base64");
-
       const IMGBB_API_KEY = process.env.IMGBB_API_KEY ?? "";
 
-      const res = await axios.post("https://api.imgbb.com/1/upload", null, {
-        params: {
-          key: IMGBB_API_KEY,
-          image: base64Image,
+      const formData = new FormData();
+      formData.append("key", IMGBB_API_KEY);
+      formData.append("image", base64Image);
+
+      const res = await axios.post("https://api.imgbb.com/1/upload", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
         },
       });
 
       const imageUrl = res?.data?.data?.url;
+      console.log(`## imageUrl:`, imageUrl);
       imageUrlList.push(imageUrl);
     }
     if (imageUrlList && imageUrlList?.length > 0) {
@@ -132,6 +137,7 @@ router.post("/product_upload", async (c) => {
         `INSERT INTO t_product_img (product_idp, img_url) VALUES ${values}`
       );
     }
+    console.log(`## imageUrlList: ${imageUrlList}`);
     result.data = upserted;
     return c.json(result);
   } catch (error) {
