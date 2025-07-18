@@ -101,9 +101,11 @@ router.post("/product_upload", async (c) => {
       RETURNING *
     `;
       upserted = updated;
+      console.log(`## UPDATE upserted:`, upserted);
     }
-    console.log(`## UPDATE upserted:`, upserted);
-    const images = body.getAll("images") as File[];
+
+    const images: any = body.getAll("images");
+    console.log(`## images:`, images);
     let imageUrlList: string[] = [];
     for (const img of images) {
       //console.log(img.name);// 1. 파일을 ArrayBuffer로 읽고 Buffer로 변환
@@ -129,15 +131,15 @@ router.post("/product_upload", async (c) => {
     if (imageUrlList && imageUrlList?.length > 0) {
       const productIdp = upserted?.idp ?? 0; // 고정된 상품 ID
       await sql`DELETE FROM t_product_img WHERE product_idp = ${productIdp}`;
-      const values = imageUrlList
-        .map((url) => `(${productIdp}, '${url}')`) // 💥 주의: 직접 문자열 삽입, SQL 인젝션 주의
-        .join(", ");
-
-      await sql.unsafe(
-        `INSERT INTO t_product_img (product_idp, img_url) VALUES ${values}`
-      );
+      for (const url of imageUrlList) {
+        await sql`
+        INSERT INTO t_product_img (product_idp, img_url)
+        VALUES (${productIdp}, ${url})
+      `;
+      }
+      console.log(`## imageUrlList: ${imageUrlList}`);
     }
-    console.log(`## imageUrlList: ${imageUrlList}`);
+
     result.data = upserted;
     return c.json(result);
   } catch (error) {
