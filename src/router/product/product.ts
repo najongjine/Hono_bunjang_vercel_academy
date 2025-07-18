@@ -27,7 +27,8 @@ router.get("/get_product_by_idp", async (c) => {
     message: ``,
   };
   try {
-    const idp = c.req.param("idp");
+    const idp = c.req.query("idp");
+    console.log(`## idp: ${idp}`);
 
     // 1. Authorization 헤더 처리
     let authHeader = c.req.header("Authorization") ?? "";
@@ -71,6 +72,7 @@ p.idp
 FROM t_product AS p
 LEFT JOIN t_product_img pi ON p.idp = pi.product_idp
 LEFT JOIN t_category as c ON c.idp=p.category_idp
+WHERE p.idp = ${idp}
 GROUP BY p.idp
 LIMIT 1
     `;
@@ -79,6 +81,7 @@ LIMIT 1
     } catch (error) {
       data = null;
     }
+    console.log(`## data: `, data);
 
     result.data = data;
     return c.json(result);
