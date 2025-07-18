@@ -19,6 +19,76 @@ router.get("/", (c) => {
   return c.json({ ddd, a });
 });
 
+router.get("/get_product_by_idp", async (c) => {
+  let result: { success: boolean; data: any; code: string; message: string } = {
+    success: true,
+    code: "",
+    data: null,
+    message: ``,
+  };
+  try {
+    const idp = c.req.param("idp");
+
+    // 1. Authorization 헤더 처리
+    let authHeader = c.req.header("Authorization") ?? "";
+    try {
+      authHeader = authHeader.split("Bearer ")[1];
+    } catch (error) {
+      authHeader = "";
+    }
+
+    // 2. 토큰 검증
+    const tokenData: any = verifyToken(authHeader);
+    if (!tokenData?.idp) {
+      // result.success = false;
+      // result.message = "로그인이 필요합니다";
+      // return c.json(result);
+    }
+
+    let data: any;
+    data = await sql`
+SELECT
+p.idp
+,p.title
+,p.content
+,p.price
+,p.category_idp
+,p.created_dt
+,p.updated_dt
+,MAX(c.category_name) as category_name
+,COALESCE(
+  json_agg(
+    json_build_object(
+      'img_idp', pi.idp,
+      'img_url', pi.img_url,
+      'product_idp', pi.product_idp,
+      'created_dt', pi.created_dt
+    )
+  ) FILTER (WHERE pi.idp IS NOT NULL),
+  '[]'
+) AS imgs
+
+FROM t_product AS p
+LEFT JOIN t_product_img pi ON p.idp = pi.product_idp
+LEFT JOIN t_category as c ON c.idp=p.category_idp
+GROUP BY p.idp
+LIMIT 1
+    `;
+    try {
+      data = data[0];
+    } catch (error) {
+      data = null;
+    }
+
+    result.data = data;
+    return c.json(result);
+  } catch (error: any) {
+    result.success = false;
+    result.message = `!!! product_upload error. ${error?.message ?? ""}`;
+    return c.json(result);
+  }
+});
+
 router.post("/body", async (c) => {
   // const : 변경 불가능
   const body = await c?.req?.json();
@@ -142,8 +212,10 @@ router.post("/product_upload", async (c) => {
 
     result.data = upserted;
     return c.json(result);
-  } catch (error) {
-    return c.json({ error });
+  } catch (error: any) {
+    result.success = false;
+    result.message = `!!! product_upload error. ${error?.message ?? ""}`;
+    return c.json(result);
   }
 });
 
