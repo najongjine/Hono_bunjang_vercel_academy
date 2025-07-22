@@ -92,6 +92,55 @@ LIMIT 1
   }
 });
 
+router.get("/get_category_list", async (c) => {
+  let result: { success: boolean; data: any; code: string; message: string } = {
+    success: true,
+    code: "",
+    data: null,
+    message: ``,
+  };
+  try {
+    //const idp = c.req.query("idp");
+
+    // 1. Authorization 헤더 처리
+    let authHeader = c.req.header("Authorization") ?? "";
+    try {
+      authHeader = authHeader.split("Bearer ")[1];
+    } catch (error) {
+      authHeader = "";
+    }
+
+    // 2. 토큰 검증
+    const tokenData: any = verifyToken(authHeader);
+    if (!tokenData?.idp) {
+      // result.success = false;
+      // result.message = "로그인이 필요합니다";
+      // return c.json(result);
+    }
+
+    let data: any;
+    data = await sql`
+SELECT
+*
+FROM t_category
+ORDER BY category_name ASC
+    `;
+    try {
+      //data = data[0];
+    } catch (error) {
+      data = null;
+    }
+    console.log(`## data: `, data);
+
+    result.data = data;
+    return c.json(result);
+  } catch (error: any) {
+    result.success = false;
+    result.message = `!!! product_upload error. ${error?.message ?? ""}`;
+    return c.json(result);
+  }
+});
+
 router.post("/body", async (c) => {
   // const : 변경 불가능
   const body = await c?.req?.json();
