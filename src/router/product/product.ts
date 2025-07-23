@@ -155,7 +155,6 @@ LIMIT ${item_limit}
     } catch (error) {
       data = null;
     }
-    console.log(`## data: `, data);
 
     result.data = data;
     return c.json(result);
