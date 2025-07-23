@@ -147,7 +147,9 @@ LEFT JOIN t_product_img pi ON p.idp = pi.product_idp
 LEFT JOIN t_category as c ON c.idp=p.category_idp
 GROUP BY p.idp
 ORDER BY p.created_dt DESC
-OFFSET (${page_no} - 1) * ${item_limit};
+OFFSET (${page_no} - 1) * ${item_limit}
+LIMIT ${item_limit}
+;
     `;
     try {
       data = data[0];
