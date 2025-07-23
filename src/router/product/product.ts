@@ -152,7 +152,6 @@ LIMIT ${item_limit}
 ;
     `;
     try {
-      data = data[0];
     } catch (error) {
       data = null;
     }
