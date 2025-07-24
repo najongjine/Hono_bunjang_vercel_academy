@@ -6,6 +6,7 @@ import { Hono } from "hono";
 import { verifyToken } from "../../utils/utils";
 import { sql } from "../../db";
 import axios from "axios";
+import { get_product_list } from "./product.query";
 
 const router = new Hono();
 
@@ -102,6 +103,8 @@ router.get("/get_product_list", async (c) => {
   try {
     const page_no = Number(c.req.query("page_no") ?? 1);
     const item_limit = Number(c.req.query("item_limit") ?? 50);
+    let search_keyword = String(c.req.query("search_keyword") ?? "");
+    search_keyword = search_keyword?.trim() ?? "";
 
     // 1. Authorization 헤더 처리
     let authHeader = c.req.header("Authorization") ?? "";
@@ -119,42 +122,7 @@ router.get("/get_product_list", async (c) => {
       // return c.json(result);
     }
 
-    let data: any;
-    data = await sql`
-SELECT
-p.idp
-,p.title
-,p.content
-,p.price
-,p.category_idp
-,p.created_dt
-,p.updated_dt
-,MAX(c.category_name) as category_name
-,COALESCE(
-  json_agg(
-    json_build_object(
-      'img_idp', pi.idp,
-      'img_url', pi.img_url,
-      'product_idp', pi.product_idp,
-      'created_dt', pi.created_dt
-    )
-  ) FILTER (WHERE pi.idp IS NOT NULL),
-  '[]'
-) AS imgs
-
-FROM t_product AS p
-LEFT JOIN t_product_img pi ON p.idp = pi.product_idp
-LEFT JOIN t_category as c ON c.idp=p.category_idp
-GROUP BY p.idp
-ORDER BY p.created_dt DESC
-OFFSET (${page_no} - 1) * ${item_limit}
-LIMIT ${item_limit}
-;
-    `;
-    try {
-    } catch (error) {
-      data = null;
-    }
+    let data = await get_product_list(search_keyword, page_no, item_limit);
 
     result.data = data;
     return c.json(result);
