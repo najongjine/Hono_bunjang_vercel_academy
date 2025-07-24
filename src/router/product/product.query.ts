@@ -3,10 +3,14 @@ import { sql } from "../../db.js";
 export const get_product_list = async (
   search_keyword: string,
   page_no = 1,
-  item_limit
+  item_limit = 50
 ) => {
   let data: any;
-  data = sql`
+  let whereClause = sql``;
+  try {
+    const keyword = `%${search_keyword}%`;
+    whereClause = sql`AND (p.title ILIKE ${keyword} OR p.content ILIKE ${keyword})`;
+    data = await sql`
 SELECT
 p.idp
 ,p.title
@@ -32,19 +36,13 @@ FROM t_product AS p
 LEFT JOIN t_product_img pi ON p.idp = pi.product_idp
 LEFT JOIN t_category as c ON c.idp=p.category_idp
 WHERE 1=1
-${
-  search_keyword
-    ? `AND (p.title ILIKE ${`%${search_keyword}%`} OR p.content ILIKE ${`%${search_keyword}%`}`
-    : ""
-}
+${whereClause}
 GROUP BY p.idp
 ORDER BY p.created_dt DESC
 OFFSET (${page_no} - 1) * ${item_limit}
 LIMIT ${item_limit}
     `;
-  try {
-    data = data[0];
-  } catch (error: any) {
+  } catch (error) {
     console.error(`!!! get_product_list. `, error?.message ?? "");
     data = undefined;
   }

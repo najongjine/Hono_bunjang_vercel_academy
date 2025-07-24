@@ -123,7 +123,7 @@ router.get("/get_product_list", async (c) => {
     }
 
     let data = await get_product_list(search_keyword, page_no, item_limit);
-
+    console.log(`data: `, data);
     result.data = data;
     return c.json(result);
   } catch (error: any) {
