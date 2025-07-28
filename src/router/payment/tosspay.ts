@@ -4,6 +4,7 @@
 
 import { Hono } from "hono";
 import { verifyToken } from "../../utils/utils";
+import axios from "axios";
 
 const router = new Hono();
 
@@ -32,6 +33,43 @@ router.post("/confirm", async (c) => {
     }
 
     const body = await c?.req?.json();
+
+    let paymentKey = String(body.get("paymentKey"));
+    let orderId = String(body.get("orderId"));
+    let amount = Number(body.get("amount"));
+
+    // 토스페이먼츠 API는 시크릿 키를 사용자 ID로 사용하고, 비밀번호는 사용하지 않습니다.
+    // 비밀번호가 없다는 것을 알리기 위해 시크릿 키 뒤에 콜론을 추가합니다.
+    const widgetSecretKey = "test_gsk_docs_OaPz8L5KdmQXkzRz3y47BMw6";
+    const encryptedSecretKey =
+      "Basic " + Buffer.from(widgetSecretKey + ":").toString("base64");
+
+    // 결제를 승인하면 결제수단에서 금액이 차감돼요.
+    await axios
+      .post(
+        "https://api.tosspayments.com/v1/payments/confirm",
+        {
+          orderId: orderId,
+          amount: amount,
+          paymentKey: paymentKey,
+        },
+        {
+          headers: {
+            Authorization: encryptedSecretKey,
+            "Content-Type": "application/json",
+          },
+        }
+      )
+      .then(function (response: any) {
+        // 결제 성공 비즈니스 로직을 구현하세요.
+        console.log(response.data);
+      })
+      .catch(function (error: any) {
+        // 결제 실패 비즈니스 로직을 구현하세요.
+        console.log(error.response.data);
+        result.success = false;
+        result.message = `tosspay axios error. ${error?.message ?? ""}`;
+      });
 
     return c.json(result);
   } catch (error: any) {
