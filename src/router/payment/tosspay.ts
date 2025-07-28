@@ -5,6 +5,7 @@
 import { Hono } from "hono";
 import { verifyToken } from "../../utils/utils";
 import axios from "axios";
+import { sql } from "../../db";
 
 const router = new Hono();
 
@@ -35,8 +36,12 @@ router.post("/confirm", async (c) => {
     const body = await c?.req?.json();
 
     let paymentKey = String(body.get("paymentKey"));
-    let orderId = String(body.get("orderId"));
+    let orderId = String(body.get("orderId") ?? "");
     let amount = Number(body.get("amount"));
+    let paymentType = String(body.get("paymentType")); //paymentType
+    const splittedOrderId = orderId.split("__");
+    const user_idp = splittedOrderId[0];
+    const product_idp = splittedOrderId[1];
 
     // 토스페이먼츠 API는 시크릿 키를 사용자 ID로 사용하고, 비밀번호는 사용하지 않습니다.
     // 비밀번호가 없다는 것을 알리기 위해 시크릿 키 뒤에 콜론을 추가합니다.
@@ -70,6 +75,19 @@ router.post("/confirm", async (c) => {
         result.success = false;
         result.message = `tosspay axios error. ${error?.message ?? ""}`;
       });
+
+    const [inserted] = await sql`
+            INSERT INTO t_payment (user_idp, product_idp, price,paymentkey,orderid,paymenttype)
+            VALUES (
+              ${user_idp},
+              ${product_idp},
+              ${amount},
+              ${paymentKey},
+              ${orderId},
+              ${paymentType}
+            )
+            RETURNING *
+          `;
 
     return c.json(result);
   } catch (error: any) {
