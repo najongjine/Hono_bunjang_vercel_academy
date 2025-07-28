@@ -74,6 +74,7 @@ router.post("/confirm", async (c) => {
         console.log(error.response.data);
         result.success = false;
         result.message = `tosspay axios error. ${error?.message ?? ""}`;
+        return c.json(result);
       });
 
     const [inserted] = await sql`
